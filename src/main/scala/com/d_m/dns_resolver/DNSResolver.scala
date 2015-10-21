@@ -9,8 +9,8 @@ object DNSResolver extends App {
   import com.typesafe.config.ConfigFactory
 
   val config = ConfigFactory.load()
-  val system = ActorSystem("DNSCache", config.getConfig("DNSCache"))
+  val system = ActorSystem("DNSResolver", config.getConfig("DNSResolver"))
 
-  val cacheActor = system.actorOf(Props[DNSResolverActor], "DNSCacheActor")
-  println("DNS Cache started at port: " + config.getInt("akka.remote.netty.tcp.port"))
+  val cacheActor = system.actorOf(Props[DNSResolverActor], "DNSResolverSupervisorActor")
+  println("DNS Resolver started at port: " + config.getInt("akka.remote.netty.tcp.port"))
 }

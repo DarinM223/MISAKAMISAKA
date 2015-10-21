@@ -1,8 +1,11 @@
+import java.net.InetAddress
+
 import akka.actor.{Props, ActorSystem}
 import akka.testkit.{ImplicitSender, DefaultTimeout, TestKit}
 import com.d_m.dns_resolver.DNSResolverActor
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
+import org.xbill.DNS.Address
 
 /**
  * Created by darin on 10/21/15.
@@ -14,12 +17,13 @@ class DNSResolverSpec
     with WordSpecLike
     with Matchers {
 
-  val dnsResolverRef = system.actorOf(Props[DNSResolverActor], "DNSResolverActor")
+  val dnsResolverRef = system.actorOf(Props(new DNSResolverActor(self)), "DNSResolverActor")
 
   "A DNS Resolver" should {
-    "Respond with TODO message when sent a string" in {
-      dnsResolverRef ! "Hello world"
-      expectMsg("TODO: send IP Address of domain name")
+    "Respond with the resolved ip address when sent a url" in {
+      val url = "www.google.com"
+      dnsResolverRef ! url
+      expectMsg(Address.getByName(url).getHostAddress)
     }
   }
 }
