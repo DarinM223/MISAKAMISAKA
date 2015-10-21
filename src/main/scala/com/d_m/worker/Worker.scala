@@ -9,7 +9,30 @@ object Worker extends App {
   import com.typesafe.config.ConfigFactory
 
   val config = ConfigFactory.load()
-  val system = ActorSystem("Worker", config.getConfig("Worker"))
+
+  // port is the first command-line argument
+  val port = args(0).toInt
+
+  // Start actor at port
+  val configStr =
+    """
+    akka {
+      actor {
+        provider = "akka.remote.RemoteActorRefProvider"
+      }
+      remote {
+        enabled-transports = ["akka.remote.netty.tcp"]
+        netty.tcp {
+          hostname = "127.0.0.1"
+          port = """.stripMargin + port + """
+        }
+      }
+    }
+    """.stripMargin
+
+  println(configStr)
+
+  val system = ActorSystem("Worker", ConfigFactory.parseString(configStr))
 
   val dnsCacheConfig = config.getConfig("DNSCache")
   val dnsHostname = dnsCacheConfig.getString("akka.remote.netty.tcp.hostname")
@@ -18,5 +41,4 @@ object Worker extends App {
   // Connect to dns cache remote actor
   val dnsCacheActor = system.actorSelection("akka.tcp://DNSCache@" + dnsHostname + ":" +
     dnsPort + "/user/DNSCacheActor")
-
 }
