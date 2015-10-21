@@ -5,7 +5,7 @@ import akka.actor.{Props, ActorSystem}
 /**
  * Created by darin on 10/20/15.
  */
-object DNSCache {
+object DNSCache extends App {
   import com.typesafe.config.ConfigFactory
 
   val config = ConfigFactory.load()
