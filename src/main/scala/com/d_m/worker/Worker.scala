@@ -30,8 +30,6 @@ object Worker extends App {
     }
     """.stripMargin
 
-  println(configStr)
-
   val system = ActorSystem("Worker", ConfigFactory.parseString(configStr))
 
   val dnsCacheConfig = config.getConfig("DNSCache")
