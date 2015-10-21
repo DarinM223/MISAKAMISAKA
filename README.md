@@ -8,7 +8,7 @@ In order to run:
 2. Edit application.conf in supervisor machine to describe the worker machines/ports
 3. Run supervisor
 
-To run DNS cache:
+To run DNS resolver:
 
     sbt "run-main com.d_m.dns_resolver.DNSResolver"
 
@@ -19,4 +19,10 @@ To run worker:
 To run supervisor:
 
     sbt "run-main com.d_m.supervisor.Supervisor"
+
+To run tests:
+
+    sbt test
+
+
 

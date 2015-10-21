@@ -32,11 +32,11 @@ object Worker extends App {
 
   val system = ActorSystem("Worker", ConfigFactory.parseString(configStr))
 
-  val dnsCacheConfig = config.getConfig("DNSCache")
-  val dnsHostname = dnsCacheConfig.getString("akka.remote.netty.tcp.hostname")
-  val dnsPort = dnsCacheConfig.getInt("akka.remote.netty.tcp.port")
+  val dnsResolverConfig = config.getConfig("DNSCache")
+  val dnsHostname = dnsResolverConfig.getString("akka.remote.netty.tcp.hostname")
+  val dnsPort = dnsResolverConfig.getInt("akka.remote.netty.tcp.port")
 
   // Connect to dns cache remote actor
-  val dnsCacheActor = system.actorSelection("akka.tcp://DNSCache@" + dnsHostname + ":" +
-    dnsPort + "/user/DNSCacheActor")
+  val dnsCacheActor = system.actorSelection("akka.tcp://DNSResolver@" + dnsHostname + ":" +
+    dnsPort + "/user/DNSResolverActor")
 }
