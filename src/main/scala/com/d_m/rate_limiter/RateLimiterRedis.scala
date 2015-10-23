@@ -7,8 +7,9 @@ import redis.{RedisClient, RedisCommands}
 import redis.api.Limit
 import redis.protocol.{MultiBulk, RedisProtocolReply}
 
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
+import scala.concurrent.{Promise, Future}
+import scala.util.Success
+import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Created by darin on 10/22/15.
@@ -38,12 +39,13 @@ object RateLimiterRedis {
    */
   def saveMaxNumberOfCalls(redis: RedisCommands, url: URL, maxNumCalls: Int): Future[RateLimiterMessage.Message] = {
     val host = url.getHost
+    val result = Promise[RateLimiterMessage.Message]()
     redis.set("config:" + host, maxNumCalls) onComplete {
-      case Success(success) if success =>
-        Future { RateLimiterMessage.ConfigSaved }
-      case _ =>
-        Future { RateLimiterMessage.ConfigFailed }
+      case Success(success) if success => result.success(RateLimiterMessage.ConfigSaved)
+      case _ => result.success(RateLimiterMessage.ConfigFailed)
     }
+
+    result.future
   }
 
   /**
@@ -53,15 +55,19 @@ object RateLimiterRedis {
    * @return an option of either the rate limit number or none
    */
   def getMaxNumberOfCalls(redis: RedisCommands, url: URL): Future[Option[Int]] = {
-    redis.get("config:" + url.getHost) andThen {
+    val maxCallPromise = Promise[Option[Int]]()
+    redis.get("config:" + url.getHost) onComplete {
       case Success(Some(data: ByteString)) =>
         val maxNumCalls: Int = RedisProtocolReply.decodeInteger(data) match {
           case Some((i, _)) => i.toInt
           case None => Int.MaxValue
         }
-        Future { Some(maxNumCalls) }
-      case _ => Future { None }
+
+        maxCallPromise.success(Some(maxNumCalls))
+      case _ => maxCallPromise.success(None)
     }
+
+    maxCallPromise.future
   }
 
   /**
@@ -70,12 +76,14 @@ object RateLimiterRedis {
    * @param url the url to check the rate limit for
    * @return a message indicating if you can or cannot call the url
    */
-  def checkRateLimit(redis: RedisClient, url: URL): Future[RateLimiterMessage.Message] = {
+  def checkRateLimit(redis: RedisClient, url: URL): Future[Option[RateLimiterMessage.Message]] = {
     val host = url.getHost
     val getMaxNumberCalls = this.getMaxNumberOfCalls(redis, url)
 
-    getMaxNumberCalls onSuccess {
-      case Some(maxNumCalls) =>
+    val rateLimitPromise = Promise[Option[RateLimiterMessage.Message]]()
+
+    getMaxNumberCalls andThen {
+      case Success(Some(maxNumCalls)) =>
         val transaction = redis.multi()
         val currentTime = System.currentTimeMillis()
 
@@ -87,18 +95,16 @@ object RateLimiterRedis {
           case Success(MultiBulk(Some(responses))) =>
             val setSize = responses.last.asInstanceOf[Long]
             if (setSize > maxNumCalls) {
-              Future { RateLimiterMessage.CannotCall }
+              rateLimitPromise.success(Some(RateLimiterMessage.CannotCall))
             } else {
-              Future { RateLimiterMessage.CanCall }
+              rateLimitPromise.success(Some(RateLimiterMessage.CanCall))
             }
-          case Failure(e) =>
-            Future { RateLimiterMessage.RedisError(e) }
+          case _ => rateLimitPromise.success(None)
         }
+      case _ => rateLimitPromise.success(None)
     }
 
-    getMaxNumberCalls onFailure { case e =>
-      Future { RateLimiterMessage.RedisError(e) }
-    }
+    rateLimitPromise.future
   }
 }
 

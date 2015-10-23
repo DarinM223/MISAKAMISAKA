@@ -2,10 +2,6 @@ package com.d_m.rate_limiter
 
 import java.net.URL
 
-import akka.util.ByteString
-import redis.protocol.{RedisProtocolReply, MultiBulk}
-
-import scala.util.{Success, Failure}
 import akka.actor.{ActorRef, Actor}
 import redis.RedisClient
 import scala.concurrent.ExecutionContext.Implicits.global
