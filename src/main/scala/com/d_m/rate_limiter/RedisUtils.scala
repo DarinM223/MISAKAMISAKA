@@ -2,19 +2,17 @@ package com.d_m.rate_limiter
 
 import java.net.URL
 
-import akka.util.ByteString
 import redis.{RedisClient, RedisCommands}
 import redis.api.Limit
-import redis.protocol.{MultiBulk, RedisProtocolReply}
+import redis.protocol.MultiBulk
 
-import scala.concurrent.{Promise, Future}
-import scala.util.Success
+import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Created by darin on 10/22/15.
  */
-object RateLimiterRedis {
+object RedisUtils {
   val MAX_TIME_DIFFERENCE = 1000
 
   /**
@@ -37,15 +35,12 @@ object RateLimiterRedis {
    * @param maxNumCalls the maximum number of calls per minute to rate limit the url to
    * @return a message indicating if the save succeeded or failed
    */
-  def saveMaxNumberOfCalls(redis: RedisCommands, url: URL, maxNumCalls: Int): Future[RateLimiterMessage.Message] = {
+  def saveMaxNumberOfCalls(redis: RedisCommands, url: URL, maxNumCalls: Int): Future[Message.Message] = {
     val host = url.getHost
-    val result = Promise[RateLimiterMessage.Message]()
-    redis.set("config:" + host, maxNumCalls) onComplete {
-      case Success(success) if success => result.success(RateLimiterMessage.ConfigSaved)
-      case _ => result.success(RateLimiterMessage.ConfigFailed)
+    redis.set("config:" + host, maxNumCalls.toString) flatMap {
+      case success if success => Future { Message.ConfigSaved }
+      case _ => Future { Message.ConfigFailed }
     }
-
-    result.future
   }
 
   /**
@@ -55,19 +50,10 @@ object RateLimiterRedis {
    * @return an option of either the rate limit number or none
    */
   def getMaxNumberOfCalls(redis: RedisCommands, url: URL): Future[Option[Int]] = {
-    val maxCallPromise = Promise[Option[Int]]()
-    redis.get("config:" + url.getHost) onComplete {
-      case Success(Some(data: ByteString)) =>
-        val maxNumCalls: Int = RedisProtocolReply.decodeInteger(data) match {
-          case Some((i, _)) => i.toInt
-          case None => Int.MaxValue
-        }
-
-        maxCallPromise.success(Some(maxNumCalls))
-      case _ => maxCallPromise.success(None)
+    redis.get[String]("config:" + url.getHost) flatMap {
+      case Some(str) => Future { Some(str.toInt) }
+      case _ => Future { None }
     }
-
-    maxCallPromise.future
   }
 
   /**
@@ -76,14 +62,11 @@ object RateLimiterRedis {
    * @param url the url to check the rate limit for
    * @return a message indicating if you can or cannot call the url
    */
-  def checkRateLimit(redis: RedisClient, url: URL): Future[Option[RateLimiterMessage.Message]] = {
+  def checkRateLimit(redis: RedisClient, url: URL): Future[Option[Message.Message]] = {
     val host = url.getHost
-    val getMaxNumberCalls = this.getMaxNumberOfCalls(redis, url)
 
-    val rateLimitPromise = Promise[Option[RateLimiterMessage.Message]]()
-
-    getMaxNumberCalls andThen {
-      case Success(Some(maxNumCalls)) =>
+    this.getMaxNumberOfCalls(redis, url) flatMap {
+      case Some(maxNumCalls) =>
         val transaction = redis.multi()
         val currentTime = System.currentTimeMillis()
 
@@ -91,20 +74,18 @@ object RateLimiterRedis {
         transaction.zadd(host, currentTime.toDouble -> currentTime)
         transaction.zcount(host)
 
-        transaction.exec() andThen {
-          case Success(MultiBulk(Some(responses))) =>
+        transaction.exec() flatMap {
+          case MultiBulk(Some(responses)) =>
             val setSize = responses.last.asInstanceOf[Long]
-            if (setSize > maxNumCalls) {
-              rateLimitPromise.success(Some(RateLimiterMessage.CannotCall))
+            if (setSize < maxNumCalls) {
+              Future { Some(Message.CannotCall) }
             } else {
-              rateLimitPromise.success(Some(RateLimiterMessage.CanCall))
+              Future { Some(Message.CanCall) }
             }
-          case _ => rateLimitPromise.success(None)
+          case _ => Future { None }
         }
-      case _ => rateLimitPromise.success(None)
+      case _ => Future { None }
     }
-
-    rateLimitPromise.future
   }
 }
 

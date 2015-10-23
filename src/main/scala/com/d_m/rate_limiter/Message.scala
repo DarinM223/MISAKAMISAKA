@@ -3,7 +3,7 @@ package com.d_m.rate_limiter
 /**
  * Created by darin on 10/22/15.
  */
-object RateLimiterMessage {
+object Message {
   trait Message
 
   // Messages for saving configs

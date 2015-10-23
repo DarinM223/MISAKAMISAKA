@@ -28,7 +28,7 @@ class DNSResolverSpec
   }
 
   "A DNS Resolver" should {
-    "Respond with the resolved ip address when sent a url and store the value in redis" in {
+    "respond with the resolved ip address when sent a url and store the value in redis" in {
       val url = new URL("http://www.google.com")
       dnsResolverRef ! url
       expectMsgPF() {
@@ -38,7 +38,7 @@ class DNSResolverSpec
       }
     }
 
-    "Return the cached value the second time" in {
+    "return the cached value the second time" in {
       val url = new URL("http://www.facebook.com")
       dnsResolverRef ! url
       expectMsgPF() {
