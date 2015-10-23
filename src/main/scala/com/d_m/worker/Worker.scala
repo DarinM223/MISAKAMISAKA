@@ -37,6 +37,6 @@ object Worker extends App {
   val dnsPort = dnsResolverConfig.getInt("akka.remote.netty.tcp.port")
 
   // Connect to dns cache remote actor
-  val dnsCacheActor = system.actorSelection("akka.tcp://DNSResolver@" + dnsHostname + ":" +
+  val dnsResolverActor = system.actorSelection("akka.tcp://DNSResolver@" + dnsHostname + ":" +
     dnsPort + "/user/DNSResolverSupervisorActor")
 }

@@ -11,6 +11,6 @@ object DNSResolver extends App {
   val config = ConfigFactory.load()
   val system = ActorSystem("DNSResolver", config.getConfig("DNSResolver"))
 
-  val cacheActor = system.actorOf(Props[DNSResolverActor], "DNSResolverSupervisorActor")
-  println("DNS Resolver started at port: " + config.getInt("akka.remote.netty.tcp.port"))
+  val supervisorActor = system.actorOf(Props[DNSResolverSupervisorActor], "DNSResolverSupervisorActor")
+  println("DNS Resolver started at port: " + config.getConfig("DNSResolver").getInt("akka.remote.netty.tcp.port"))
 }

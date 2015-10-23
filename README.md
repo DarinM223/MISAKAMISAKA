@@ -5,13 +5,18 @@ In order to run:
 
 0. Start redis server
 1. Run DNS Resolver
-2. Run workers in certain machines/ports
-3. Edit application.conf in supervisor machine to describe the worker machines/ports
-4. Run supervisor
+2. Run Rate Limiter
+3. Run workers in certain machines/ports
+4. Edit application.conf in supervisor machine to describe the worker machines/ports
+5. Run supervisor
 
-To run DNS resolver:
+To run DNS Resolver:
 
     sbt "run-main com.d_m.dns_resolver.DNSResolver"
+    
+To run Rate Limiter:
+
+    sbt "run-main com.d_m.rate_limiter.RateLimiter"
 
 To run worker:
 

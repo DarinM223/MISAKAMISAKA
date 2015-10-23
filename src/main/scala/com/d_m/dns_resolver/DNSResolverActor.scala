@@ -14,7 +14,6 @@ import scala.concurrent.duration._
 class DNSResolverActor(originalSender: ActorRef, redis: RedisClient) extends Actor {
   def receive = {
     case url: URL =>
-      println(url.getHost)
       val timeout = 1 second
       val response = redis.get[String](url.getHost)
 
