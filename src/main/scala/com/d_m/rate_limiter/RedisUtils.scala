@@ -1,10 +1,13 @@
 package com.d_m.rate_limiter
 
+import java.math.BigInteger
 import java.net.URL
+import java.security.SecureRandom
 
+import akka.util.ByteString
 import redis.{RedisClient, RedisCommands}
 import redis.api.Limit
-import redis.protocol.MultiBulk
+import redis.protocol.{ParseNumber, MultiBulk}
 
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,6 +19,44 @@ object RedisUtils {
   val MAX_TIME_DIFFERENCE = 1000
 
   /**
+   * Generates random hash, attempts to add to sorted set
+   * If it fails, call itself again
+   * Limit to a max of 10 tries
+   * @param redis the redis interface to use
+   * @param key the key to generate hash for
+   * @param time the time as key for the sorted set
+   * @param numTimesCalled the number of times this function has been called already
+   * @return
+   */
+  private[this] def addRandomHashForSortedSet(redis: RedisCommands, key: String, time: Long, numTimesCalled: Int): Future[Boolean] = {
+    if (numTimesCalled > 5) {
+      println("Fail!")
+      Future { false }
+    } else {
+      val random = new SecureRandom()
+      val randomString = new BigInteger(130, random).toString
+
+      redis.zadd(key, time.toDouble -> randomString) flatMap {
+        case value: Long if value == 1 => Future { true }
+        case _ => addRandomHashForSortedSet(redis, key, time, numTimesCalled + 1)
+      } recover { case _ => false }
+    }
+  }
+
+  /**
+   * Sets a unique element in a sorted set in redis for a certain key
+   * Generates random hash, checks redis if it is already in the set and otherwise adds it to the sorted set
+   * If it is in the set it generates another random hash until it finds a unique hash
+   * @param redis the redis interface to use
+   * @param key the host name to add a time to
+   * @param time the time to add to a sorted set
+   * @return
+   */
+  private[this] def addUniqueKey(redis: RedisCommands, key: String, time: Long): Future[Boolean] = {
+    this.addRandomHashForSortedSet(redis, key, time, 0)
+  }
+
+  /**
    * Removes all expired keys from a time and a time range
    * @param redis the redis instance to use (supports transaction builders also)
    * @param key (the host name to remove expired names from)
@@ -25,7 +66,7 @@ object RedisUtils {
    */
   private[this] def removeExpiredKeys(redis: RedisCommands, key: String, time: Long, maxTimeDifference: Long): Future[Long] = {
     val greaterThanTime = if (time - maxTimeDifference < 0) 0 else time - maxTimeDifference
-    redis.zremrangebyscore(key, Limit(greaterThanTime, inclusive = false), Limit(time, inclusive = true))
+    redis.zremrangebyscore(key, Limit(Double.NegativeInfinity, inclusive = true), Limit(greaterThanTime, inclusive = false))
   }
 
   /**
@@ -40,7 +81,7 @@ object RedisUtils {
     redis.set("config:" + host, maxNumCalls.toString) flatMap {
       case success if success => Future { Message.ConfigSaved }
       case _ => Future { Message.ConfigFailed }
-    }
+    } recover { case _ => Message.ConfigFailed }
   }
 
   /**
@@ -53,7 +94,7 @@ object RedisUtils {
     redis.get[String]("config:" + url.getHost) flatMap {
       case Some(str) => Future { Some(str.toInt) }
       case _ => Future { None }
-    }
+    } recover { case _ => None }
   }
 
   /**
@@ -64,25 +105,31 @@ object RedisUtils {
    */
   def checkRateLimit(redis: RedisClient, url: URL): Future[Option[Message.Message]] = {
     val host = url.getHost
+    val currentTime = System.currentTimeMillis()
+    val transaction = redis.multi()
 
-    this.getMaxNumberOfCalls(redis, url) flatMap {
-      case Some(maxNumCalls) =>
-        val transaction = redis.multi()
-        val currentTime = System.currentTimeMillis()
+    val result = for {
+      Some(maxNumCalls) <- this.getMaxNumberOfCalls(redis, url)
 
-        this.removeExpiredKeys(transaction, host, currentTime, MAX_TIME_DIFFERENCE)
-        transaction.zadd(host, currentTime.toDouble -> currentTime)
-        transaction.zcount(host)
+      // Synchronous redis transactions NOTE: these can't return a future because the future will BLOCK until the entire thing is executed :P
+      _ = this.removeExpiredKeys(transaction, host, currentTime, MAX_TIME_DIFFERENCE)
+      _ = this.addUniqueKey(redis, host, currentTime)
+      _ = transaction.zcount(host, Limit(Double.NegativeInfinity), Limit(Double.PositiveInfinity))
 
-        transaction.exec() flatMap {
-          case MultiBulk(Some(responses)) =>
-            val setSize = responses.last.asInstanceOf[Long]
-            if (setSize < maxNumCalls) {
-              Future { Some(Message.CannotCall) }
-            } else {
-              Future { Some(Message.CanCall) }
-            }
-          case _ => Future { None }
+      execResult <- transaction.exec()
+    } yield (execResult, maxNumCalls)
+
+    result.flatMap {
+      case (MultiBulk(Some(responses)), maxNumCalls) =>
+        // Unpack number from ByteString
+        val setSize = ParseNumber.parseInt(responses.last.asOptByteString match {
+          case Some(str) => str
+          case _ => ByteString("0")
+        })
+        if (setSize < maxNumCalls) {
+          Future { Some(Message.CannotCall) }
+        } else {
+          Future { Some(Message.CanCall) }
         }
       case _ => Future { None }
     }

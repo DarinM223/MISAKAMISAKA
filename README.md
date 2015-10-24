@@ -14,19 +14,19 @@ In order to run:
 
 To run DNS Resolver:
 
-    sbt "run-main com.d_m.dns_resolver.DNSResolver"
+    sbt "run-main com.d_m.dns_resolver.Main"
     
 To run Rate Limiter:
 
-    sbt "run-main com.d_m.rate_limiter.RateLimiter"
+    sbt "run-main com.d_m.rate_limiter.Main"
 
 To run worker:
 
-    sbt "run-main com.d_m.worker.Worker <port_name>"
+    sbt "run-main com.d_m.worker.Main <port_name>"
 
 To run supervisor:
 
-    sbt "run-main com.d_m.supervisor.Supervisor"
+    sbt "run-main com.d_m.supervisor.Main"
 
 To run tests:
 

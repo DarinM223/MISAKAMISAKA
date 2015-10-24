@@ -1,16 +1,16 @@
-package com.d_m.rate_limiter
+package com.d_m.rate_limiter.actors
 
 import java.net.URL
 
-import akka.actor.{Props, Actor}
+import akka.actor.{Actor, Props}
 import redis.RedisClient
 
 /**
  * Created by darin on 10/22/15.
  */
-class RateLimiterSupervisorActor extends Actor {
+class RateLimiterSupervisor extends Actor {
   val redis = RedisClient()
-  val rateLimiterActor = context.actorOf(Props(new RateLimiterActor(redis)), "RateLimiterActor")
+  val rateLimiterActor = context.actorOf(Props(new RateLimiter(redis)), "RateLimiterActor")
 
   def receive = {
     case (url: URL, maxNumOfCalls: Int) => rateLimiterActor ! (sender(), url, maxNumOfCalls)

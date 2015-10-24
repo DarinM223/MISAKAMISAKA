@@ -2,7 +2,7 @@ import java.net.URL
 
 import akka.actor.{Props, ActorSystem}
 import akka.testkit.{ImplicitSender, DefaultTimeout, TestKit}
-import com.d_m.dns_resolver.DNSResolverActor
+import com.d_m.dns_resolver.actors.DNSResolver
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
@@ -20,8 +20,8 @@ class DNSResolverSpec
     with BeforeAndAfterAll
     with Matchers {
 
-  val redis = RedisClient()
-  val dnsResolverRef = system.actorOf(Props(new DNSResolverActor(self, redis)), "DNSResolverActor")
+  val redis = RedisClient(db = Some(1))
+  val dnsResolverRef = system.actorOf(Props(new DNSResolver(self, redis)), "DNSResolverActor")
 
   override def afterAll(): Unit = {
     redis.flushall()

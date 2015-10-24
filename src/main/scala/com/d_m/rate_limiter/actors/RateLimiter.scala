@@ -1,15 +1,17 @@
-package com.d_m.rate_limiter
+package com.d_m.rate_limiter.actors
 
 import java.net.URL
 
-import akka.actor.{ActorRef, Actor}
+import akka.actor.{Actor, ActorRef}
+import com.d_m.rate_limiter.{Message, RedisUtils}
 import redis.RedisClient
+
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Created by darin on 10/22/15.
  */
-class RateLimiterActor(redis: RedisClient) extends Actor {
+class RateLimiter(redis: RedisClient) extends Actor {
 
 
   def receive = {

@@ -5,7 +5,7 @@ import akka.actor.ActorSystem
 /**
  * Created by darin on 10/20/15.
  */
-object Worker extends App {
+object Main extends App {
   import com.typesafe.config.ConfigFactory
 
   val config = ConfigFactory.load()
