@@ -60,7 +60,9 @@ class RateLimiterRedisSpec
         rateLimitRequest
       }
 
-      println(Await.result(result, 1 second))
+      val value = Await.result(result, 1 second)
+      value.count(_ => true) should equal(1)
+      value should equal(Some(Message.CanCall))
     }
 
     "call twitter 5 times in a second" in {
@@ -69,7 +71,21 @@ class RateLimiterRedisSpec
         Future.sequence(rateLimitRequests)
       }
 
-      println(Await.result(result, 2 seconds))
+      val value = Await.result(result, 1 second)
+      value.count(_ => true) should equal(5)
+      value.foreach(_ should equal(Some(Message.CanCall)))
+    }
+
+    "calling linkedin 6 times in a second with a rate limit of 5 should cause an error" in {
+      val result = RedisUtils.saveMaxNumberOfCalls(redis, new URL("http://www.linkedin.com"), 5) flatMap { success =>
+        val rateLimitRequests = (1 to 6).map(_ => RedisUtils.checkRateLimit(redis, new URL("http://www.linkedin.com")))
+        Future.sequence(rateLimitRequests)
+      }
+
+      val value = Await.result(result, 1 second)
+      value.count(_ => true) should equal(6)
+      value.last should equal(Some(Message.CannotCall))
+      (0 until 5).foreach(i => value(i) should equal(Some(Message.CanCall)))
     }
   }
 }

@@ -16,44 +16,26 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * Created by darin on 10/22/15.
  */
 object RedisUtils {
-  val MAX_TIME_DIFFERENCE = 1000
-
-  /**
-   * Generates random hash, attempts to add to sorted set
-   * If it fails, call itself again
-   * Limit to a max of 10 tries
-   * @param redis the redis interface to use
-   * @param key the key to generate hash for
-   * @param time the time as key for the sorted set
-   * @param numTimesCalled the number of times this function has been called already
-   * @return
-   */
-  private[this] def addRandomHashForSortedSet(redis: RedisCommands, key: String, time: Long, numTimesCalled: Int): Future[Boolean] = {
-    if (numTimesCalled > 5) {
-      println("Fail!")
-      Future { false }
-    } else {
-      val random = new SecureRandom()
-      val randomString = new BigInteger(130, random).toString
-
-      redis.zadd(key, time.toDouble -> randomString) flatMap {
-        case value: Long if value == 1 => Future { true }
-        case _ => addRandomHashForSortedSet(redis, key, time, numTimesCalled + 1)
-      } recover { case _ => false }
-    }
-  }
+  // 1 second in nanoseconds
+  val MAX_TIME_DIFFERENCE = 1000000000
 
   /**
    * Sets a unique element in a sorted set in redis for a certain key
-   * Generates random hash, checks redis if it is already in the set and otherwise adds it to the sorted set
-   * If it is in the set it generates another random hash until it finds a unique hash
+   * Generates random hash, and attempts to add it
+   * If there is no duplicate hash, then it should succeed otherwise it fails
    * @param redis the redis interface to use
    * @param key the host name to add a time to
    * @param time the time to add to a sorted set
    * @return
    */
   private[this] def addUniqueKey(redis: RedisCommands, key: String, time: Long): Future[Boolean] = {
-    this.addRandomHashForSortedSet(redis, key, time, 0)
+    val random = new SecureRandom()
+    val randomString = new BigInteger(130, random).toString
+
+    redis.zadd(key, time.toDouble -> randomString) flatMap {
+      case value: Long if value == 1 => Future { true }
+      case _ => Future { false }
+    } recover { case _ => false }
   }
 
   /**
@@ -105,31 +87,43 @@ object RedisUtils {
    */
   def checkRateLimit(redis: RedisClient, url: URL): Future[Option[Message.Message]] = {
     val host = url.getHost
-    val currentTime = System.currentTimeMillis()
+    val currentTime = System.nanoTime()
+
     val transaction = redis.multi()
 
-    val result = for {
-      Some(maxNumCalls) <- this.getMaxNumberOfCalls(redis, url)
+    this.getMaxNumberOfCalls(transaction, url)
+    this.removeExpiredKeys(transaction, host, currentTime, MAX_TIME_DIFFERENCE)
+    this.addUniqueKey(transaction, host, currentTime)
+    transaction.zcount(host, Limit(Double.NegativeInfinity), Limit(Double.PositiveInfinity))
 
-      // Synchronous redis transactions NOTE: these can't return a future because the future will BLOCK until the entire thing is executed :P
-      _ = this.removeExpiredKeys(transaction, host, currentTime, MAX_TIME_DIFFERENCE)
-      _ = this.addUniqueKey(redis, host, currentTime)
-      _ = transaction.zcount(host, Limit(Double.NegativeInfinity), Limit(Double.PositiveInfinity))
-
-      execResult <- transaction.exec()
-    } yield (execResult, maxNumCalls)
+    val result = transaction.exec()
 
     result.flatMap {
-      case (MultiBulk(Some(responses)), maxNumCalls) =>
-        // Unpack number from ByteString
-        val setSize = ParseNumber.parseInt(responses.last.asOptByteString match {
+      case MultiBulk(Some(responses)) =>
+        // Unpack numbers from ByteString
+        val addSuccess = ParseNumber.parseInt(responses(2).asOptByteString match {
           case Some(str) => str
           case _ => ByteString("0")
         })
-        if (setSize < maxNumCalls) {
-          Future { Some(Message.CannotCall) }
+
+        // Fail if it failed to add the extra key
+        if (addSuccess != 1) {
+          Future { None }
         } else {
-          Future { Some(Message.CanCall) }
+          val maxNumCalls = ParseNumber.parseInt(responses.head.asOptByteString match {
+            case Some(str) => str
+            case _ => ByteString("0")
+          })
+          val setSize = ParseNumber.parseInt(responses.last.asOptByteString match {
+            case Some(str) => str
+            case _ => ByteString("0")
+          })
+
+          if (setSize > maxNumCalls) {
+            Future { Some(Message.CannotCall) }
+          } else {
+            Future { Some(Message.CanCall) }
+          }
         }
       case _ => Future { None }
     }
