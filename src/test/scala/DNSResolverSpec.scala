@@ -24,17 +24,17 @@ class DNSResolverSpec
   val dnsResolverRef = system.actorOf(Props(new DNSResolver(self, redis)), "DNSResolverActor")
 
   override def afterAll(): Unit = {
-    redis.flushall()
+    redis.flushdb()
   }
 
   "A DNS Resolver" should {
     "respond with the resolved ip address when sent a url and store the value in redis" in {
       val url = new URL("http://www.google.com")
+
       dnsResolverRef ! url
       expectMsgPF() {
         case _: String =>
           redis.get[String]("www.google.com").futureValue should not equal None
-          ()
       }
     }
 
@@ -47,9 +47,7 @@ class DNSResolverSpec
           expectMsgPF() {
             case address2: String =>
               address should equal(address2)
-              ()
           }
-          ()
       }
     }
   }

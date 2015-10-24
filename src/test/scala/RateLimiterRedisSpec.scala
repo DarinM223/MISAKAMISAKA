@@ -22,7 +22,7 @@ class RateLimiterRedisSpec
   val redis = RedisClient(db = Some(0))
 
   override def afterAll(): Unit = {
-    redis.flushall()
+    redis.flushdb()
   }
 
   "saveMaxNumberOfCalls" should {

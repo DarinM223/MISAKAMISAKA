@@ -10,12 +10,12 @@ import redis.RedisClient
  * Created by darin on 10/21/15.
  */
 class DNSResolverSupervisor extends Actor {
-      import scala.concurrent.duration._
+  import scala.concurrent.duration._
 
-      val redis = RedisClient()
+  val redis = RedisClient()
 
-      override val supervisorStrategy =
-      OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
+  override val supervisorStrategy =
+    OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange = 1 minute) {
       case _: UnknownHostException => Stop
       case _ => Restart
     }
