@@ -8,7 +8,6 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.{Matchers, BeforeAndAfterAll, WordSpecLike}
 import org.scalatest.concurrent.ScalaFutures
 import redis.RedisClient
-import scala.concurrent.duration._
 
 /**
  * Created by darin on 10/23/15.

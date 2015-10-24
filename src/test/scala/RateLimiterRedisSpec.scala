@@ -76,7 +76,7 @@ class RateLimiterRedisSpec
       value.foreach(_ should equal(Some(Message.CanCall)))
     }
 
-    "calling linkedin 6 times in a second with a rate limit of 5 should cause an error" in {
+    "call linkedin 6 times in a second with a rate limit of 5 and cause an error" in {
       val result = RedisUtils.saveMaxNumberOfCalls(redis, new URL("http://www.linkedin.com"), 5) flatMap { success =>
         val rateLimitRequests = (1 to 6).map(_ => RedisUtils.checkRateLimit(redis, new URL("http://www.linkedin.com")))
         Future.sequence(rateLimitRequests)
@@ -86,6 +86,25 @@ class RateLimiterRedisSpec
       value.count(_ => true) should equal(6)
       value.last should equal(Some(Message.CannotCall))
       (0 until 5).foreach(i => value(i) should equal(Some(Message.CanCall)))
+    }
+
+    "call ycombinator 5 times, wait a second and call it again and it should work" in {
+      val result = RedisUtils.saveMaxNumberOfCalls(redis, new URL("http://www.ycombinator.com"), 5) flatMap { success =>
+        val rateLimitRequests = (1 to 5).map(_ => RedisUtils.checkRateLimit(redis, new URL("http://www.ycombinator.com")))
+        Future.sequence(rateLimitRequests)
+      }
+
+      val value = Await.result(result, 1 second)
+      value.count(_ => true) should equal(5)
+      value.foreach(_ should equal(Some(Message.CanCall)))
+
+      // Wait for one second
+      Thread.sleep(1000)
+
+      val finalRequest = RedisUtils.checkRateLimit(redis, new URL("http://www.ycombinator.com"))
+      val finalValue = Await.result(finalRequest, 1 second)
+
+      finalValue should equal(Some(Message.CanCall))
     }
   }
 }

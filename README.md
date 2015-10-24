@@ -38,7 +38,7 @@ TODO:
 * ~~Start DNS Resolver implementation~~
     * ~~For every URL received, get the hostname and return the IP address~~
     * ~~Cache hostname -> IP in Redis so that subsequent requests won't have to be resolved~~
-* ~~Start rate limiter implementation (maybe storing a queue in DNSResolver or using another remote service actor)~~
+* ~~Start rate limiter implementation (using Redis sorted sets, something similar to [this](https://engineering.classdojo.com/blog/2015/02/06/rolling-rate-limiter/))~~
 * Figure out how to start actors in a cluster in a round robin fashion
 * Start worker implementation
     * Resolve DNS using DNSResolver
