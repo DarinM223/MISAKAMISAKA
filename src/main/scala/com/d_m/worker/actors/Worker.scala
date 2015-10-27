@@ -22,7 +22,21 @@ import scala.concurrent.ExecutionContext.Implicits.global
  * Created by darin on 10/20/15.
  */
 class Worker(dnsResolver: ActorRef, rateLimiter: ActorRef) extends Actor {
+  def receive = {
+    case urlStr: String =>
+      val url = new URL(urlStr)
 
+      Worker.getAddressAndRateLimit(url, dnsResolver, rateLimiter) onComplete {
+        case Success((address, result)) =>
+          Worker.routeResult(sender, url, address, result)
+        case Failure(e) =>
+          sender ! com.d_m.worker.Message.RateLimitFailed(url)
+      }
+  }
+}
+
+object Worker {
+  // Implicit values for Akka IO
   implicit val timeout = Timeout(FiniteDuration(1, TimeUnit.MINUTES))
   implicit val system = ActorSystem()
 
@@ -31,7 +45,7 @@ class Worker(dnsResolver: ActorRef, rateLimiter: ActorRef) extends Actor {
    * @param url the url to resolve and check rate limit for
    * @return a future containing a tuple of the resolved address and the result of the rate limiter query
    */
-  private[this] def getAddressAndRateLimit(url: URL): Future[(String, Message.Message)] = {
+  def getAddressAndRateLimit(url: URL, dnsResolver: ActorRef, rateLimiter: ActorRef): Future[(String, Message.Message)] = {
     val getAddressFuture: Future[String] = (dnsResolver ? url).mapTo[String]
     val getRateLimiterResult: Future[Message.Message] = (rateLimiter ? url).mapTo[Message.Message]
 
@@ -47,7 +61,7 @@ class Worker(dnsResolver: ActorRef, rateLimiter: ActorRef) extends Actor {
    * @param address the address to request
    * @return a future containing the response
    */
-  private[this] def sendRequest(address: String): Future[HttpResponse] =
+  def sendRequest(address: String): Future[HttpResponse] =
     (IO(Http) ? Get(address)).mapTo[HttpResponse]
 
   /**
@@ -55,13 +69,13 @@ class Worker(dnsResolver: ActorRef, rateLimiter: ActorRef) extends Actor {
    * @param body the http response body
    * @return list of links in the body
    */
-  private[this] def retrieveLinksFromBody(body: String): List[String] = List("TODO")
+  def retrieveLinksFromBody(body: String): List[String] = List("TODO")
 
   /**
    * Unwraps the
    * @param response
    */
-  private[this] def parseHttpBody(response: HttpResponse) = response.entity match {
+  def parseHttpBody(sender: ActorRef, response: HttpResponse) = response.entity match {
     case body: NonEmpty =>
       val links = retrieveLinksFromBody(body.asString)
       sender ! links
@@ -78,27 +92,15 @@ class Worker(dnsResolver: ActorRef, rateLimiter: ActorRef) extends Actor {
    * @param address the dns resolved address of the url
    * @param result the result of the rate limiter query
    */
-  private[this] def routeResult(url: URL, address: String, result: Message.Message) = result match {
+  def routeResult(sender: ActorRef, url: URL, address: String, result: Message.Message) = result match {
     case Message.CanCall =>
       sendRequest(address) onComplete {
         case Success(response: HttpResponse) =>
-          parseHttpBody(response)
+          parseHttpBody(sender, response)
         case Failure(e) =>
           sender ! com.d_m.worker.Message.RateLimitFailed(url)
       }
     case Message.CannotCall =>
       sender ! com.d_m.worker.Message.RateLimitFailed(url)
-  }
-
-  def receive = {
-    case urlStr: String =>
-      val url = new URL(urlStr)
-
-      getAddressAndRateLimit(url) onComplete {
-        case Success((address, result)) =>
-          routeResult(url, address, result)
-        case Failure(e) =>
-          sender ! com.d_m.worker.Message.RateLimitFailed(url)
-      }
   }
 }

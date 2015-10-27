@@ -28,7 +28,7 @@ object RedisUtils {
    * @param time the time to add to a sorted set
    * @return
    */
-  private[this] def addUniqueKey(redis: RedisCommands, key: String, time: Long): Future[Boolean] = {
+  def addUniqueKey(redis: RedisCommands, key: String, time: Long): Future[Boolean] = {
     val random = new SecureRandom()
     val randomString = new BigInteger(130, random).toString
 
@@ -46,7 +46,7 @@ object RedisUtils {
    * @param maxTimeDifference (the maximum time difference to expire by)
    * @return Future[Long] the result of the operation
    */
-  private[this] def removeExpiredKeys(redis: RedisCommands, key: String, time: Long, maxTimeDifference: Long): Future[Long] = {
+  def removeExpiredKeys(redis: RedisCommands, key: String, time: Long, maxTimeDifference: Long): Future[Long] = {
     val greaterThanTime = if (time - maxTimeDifference < 0) 0 else time - maxTimeDifference
     redis.zremrangebyscore(key, Limit(Double.NegativeInfinity, inclusive = true), Limit(greaterThanTime, inclusive = false))
   }
