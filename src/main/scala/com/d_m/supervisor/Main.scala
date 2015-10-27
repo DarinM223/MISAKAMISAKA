@@ -1,7 +1,9 @@
 package com.d_m.supervisor
 
 import akka.actor.{Props, ActorSystem}
-import com.d_m.supervisor.actors.Supervisor
+import akka.cluster.Cluster
+import com.d_m.supervisor.actors.{Producer, Supervisor}
+import com.d_m.worker.actors.Worker
 
 /**
  * Created by darin on 10/20/15.
@@ -12,7 +14,12 @@ object Main extends App {
   val config = ConfigFactory.load()
   val system = ActorSystem("Supervisor", config.getConfig("Supervisor"))
 
+  Cluster(system)
+
   // Start main supervisor actor
   val supervisorActor = system.actorOf(Props[Supervisor], "SupervisorActor")
+  val worker = system.actorOf(Props[Worker], "WorkerActor")
+  val producer = system.actorOf(Props[Producer], "ProducerActor")
+
   println("Supervisor started at port: " + config.getConfig("Supervisor").getInt("akka.remote.netty.tcp.port"))
 }

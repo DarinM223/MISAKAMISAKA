@@ -39,4 +39,11 @@ object Main extends App {
   // Connect to dns cache remote actor
   val dnsResolverActor = system.actorSelection("akka.tcp://DNSResolver@" + dnsHostname + ":" +
     dnsPort + "/user/DNSResolverSupervisorActor")
+
+  val rateLimiterConfig = config.getConfig("RateLimiter")
+  val rateLimiterHostname = rateLimiterConfig.getString("akka.remote.netty.tcp.hostname")
+  val rateLimiterPort = rateLimiterConfig.getInt("akka.remote.netty.tcp.port")
+
+  val rateLimiterActor = system.actorSelection("akka.tcp://RateLimiter@" + rateLimiterHostname + ":" +
+    rateLimiterPort + "/user/RateLimiterSupervisorActor")
 }

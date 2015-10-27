@@ -65,7 +65,7 @@ class RateLimiterSpec
       rateLimiterRef ! (self, new URL("http://www.linkedin.com"))
       expectMsg(Some(Message.CanCall))
       rateLimiterRef ! (self, new URL("http://www.linkedin.com"))
-      expectMsg(Some(Message.CanCall))
+    expectMsg(Some(Message.CanCall))
       rateLimiterRef ! (self, new URL("http://www.linkedin.com"))
       expectMsg(Some(Message.CanCall))
       rateLimiterRef ! (self, new URL("http://www.linkedin.com"))
