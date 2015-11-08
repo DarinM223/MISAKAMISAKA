@@ -7,7 +7,7 @@ import akka.actor.{Actor, OneForOneStrategy, Props}
 import redis.RedisClient
 
 /**
- * Created by darin on 10/21/15.
+ * Supervisor actor that manages one DNSResolver actor
  */
 class DNSResolverSupervisor extends Actor {
   import scala.concurrent.duration._

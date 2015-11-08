@@ -6,7 +6,7 @@ import com.d_m.supervisor.actors.{Producer, Supervisor}
 import com.d_m.worker.actors.Worker
 
 /**
- * Created by darin on 10/20/15.
+ * Main application for the supervisor program
  */
 object Main extends App {
   import com.typesafe.config.ConfigFactory

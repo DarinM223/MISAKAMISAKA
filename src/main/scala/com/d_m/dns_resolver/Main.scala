@@ -4,7 +4,7 @@ import akka.actor.{Props, ActorSystem}
 import com.d_m.dns_resolver.actors.DNSResolverSupervisor
 
 /**
- * Created by darin on 10/20/15.
+ * Main application for the DNS Resolver program
  */
 object Main extends App {
   import com.typesafe.config.ConfigFactory

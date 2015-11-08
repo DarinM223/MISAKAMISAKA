@@ -1,7 +1,8 @@
 package com.d_m.rate_limiter
 
 /**
- * Created by darin on 10/22/15.
+ * Contains all of the messages used by the rate limiter to communicate
+ * with other actors
  */
 object Message {
   trait Message

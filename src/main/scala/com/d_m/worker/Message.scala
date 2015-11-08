@@ -3,7 +3,7 @@ package com.d_m.worker
 import java.net.URL
 
 /**
- * Created by darin on 10/26/15.
+ * Contains all of the messages used by the worker to communicate with the supervisor
  */
 object Message {
   trait Message

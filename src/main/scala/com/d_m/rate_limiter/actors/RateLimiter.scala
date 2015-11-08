@@ -9,7 +9,8 @@ import redis.RedisClient
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
- * Created by darin on 10/22/15.
+ * Actor that handles rate limits on domains
+ * Allows you to set a rate limit and check if you can call a domain
  */
 class RateLimiter(redis: RedisClient) extends Actor {
   def receive = {

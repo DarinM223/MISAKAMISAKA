@@ -9,7 +9,7 @@ import redis.RedisClient
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
- * Created by darin on 10/20/15.
+ * Actor that resolves the IP addresses of URLs
  */
 class DNSResolver(originalSender: ActorRef, redis: RedisClient) extends Actor {
   def receive = {

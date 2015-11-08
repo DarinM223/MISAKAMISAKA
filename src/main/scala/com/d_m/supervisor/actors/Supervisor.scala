@@ -3,7 +3,7 @@ package com.d_m.supervisor.actors
 import akka.actor._
 
 /**
- * Created by darin on 10/20/15.
+ * Supervisor that manages worker actors in a cluster
  */
 class Supervisor extends Actor {
   def receive = {

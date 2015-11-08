@@ -10,7 +10,7 @@ import org.scalatest.concurrent.ScalaFutures
 import redis.RedisClient
 
 /**
- * Created by darin on 10/23/15.
+ * Test class for RateLimiter
  */
 class RateLimiterSpec
     extends TestKit(ActorSystem("RateLimiterSpec", ConfigFactory.parseString(RateLimiterSpec.config)))

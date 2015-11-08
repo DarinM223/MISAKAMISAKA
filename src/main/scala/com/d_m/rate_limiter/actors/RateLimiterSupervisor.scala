@@ -6,7 +6,7 @@ import akka.actor.{Actor, Props}
 import redis.RedisClient
 
 /**
- * Created by darin on 10/22/15.
+ * Supervisor actor that manages a RateLimiter Actor
  */
 class RateLimiterSupervisor extends Actor {
   val redis = RedisClient()

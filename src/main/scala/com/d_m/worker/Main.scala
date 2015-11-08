@@ -3,7 +3,7 @@ package com.d_m.worker
 import akka.actor.ActorSystem
 
 /**
- * Created by darin on 10/20/15.
+ * Main application for a worker program
  */
 object Main extends App {
   import com.typesafe.config.ConfigFactory

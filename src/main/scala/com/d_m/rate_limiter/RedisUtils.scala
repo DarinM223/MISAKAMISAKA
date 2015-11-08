@@ -13,7 +13,8 @@ import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
- * Created by darin on 10/22/15.
+ * Utility object for RateLimiter with functions
+ * that use Redis to check rate limits
  */
 object RedisUtils {
   // 1 second in nanoseconds
