@@ -102,23 +102,15 @@ object RedisUtils {
     result.flatMap {
       case MultiBulk(Some(responses)) =>
         // Unpack numbers from ByteString
-        val addSuccess = ParseNumber.parseInt(responses(2).asOptByteString match {
-          case Some(str) => str
-          case _ => ByteString("0")
-        })
+        val addSuccess = ParseNumber.parseInt(responses(2).asOptByteString getOrElse ByteString("0"))
 
         // Fail if it failed to add the extra key
         if (addSuccess != 1) {
           Future { None }
         } else {
-          val maxNumCalls = ParseNumber.parseInt(responses.head.asOptByteString match {
-            case Some(str) => str
-            case _ => ByteString("0")
-          })
-          val setSize = ParseNumber.parseInt(responses.last.asOptByteString match {
-            case Some(str) => str
-            case _ => ByteString("0")
-          })
+          // Unpack numbers from ByteString
+          val maxNumCalls = ParseNumber.parseInt(responses.head.asOptByteString getOrElse ByteString("0"))
+          val setSize = ParseNumber.parseInt(responses.last.asOptByteString getOrElse ByteString("0"))
 
           if (setSize > maxNumCalls) {
             Future { Some(Message.CannotCall) }
