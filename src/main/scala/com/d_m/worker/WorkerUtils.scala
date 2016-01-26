@@ -35,12 +35,12 @@ object WorkerUtils {
    */
   def getAddressAndRateLimit(
       url: URL,
-      dnsResolver: ActorRef,
-      rateLimiter: ActorRef): Future[(String, com.d_m.rate_limiter.Message.Message)] = {
+      dnsResolverSupervisor: ActorRef,
+      rateLimiterSupervisor: ActorRef): Future[(String, com.d_m.rate_limiter.Message.Message)] = {
 
-    val getAddressFuture: Future[String] = (dnsResolver ? url).mapTo[String]
+    val getAddressFuture: Future[String] = (dnsResolverSupervisor ? url).mapTo[String]
     val getRateLimiterResult: Future[com.d_m.rate_limiter.Message.Message] =
-      (rateLimiter ? url).mapTo[com.d_m.rate_limiter.Message.Message]
+      (rateLimiterSupervisor ? url).mapTo[com.d_m.rate_limiter.Message.Message]
 
     // Fetch both results concurrently
     for {

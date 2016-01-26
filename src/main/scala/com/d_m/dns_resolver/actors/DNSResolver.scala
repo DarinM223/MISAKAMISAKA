@@ -2,26 +2,38 @@ package com.d_m.dns_resolver.actors
 
 import java.net.{InetAddress, URL}
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{ActorRef, Status, Actor}
 import org.xbill.DNS._
 import redis.RedisClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
+
+case class ResolverNotFound(err: String) extends Exception(err)
 
 /**
  * Actor that resolves the IP addresses of URLs
  */
-class DNSResolver(originalSender: ActorRef, redis: RedisClient) extends Actor {
+class DNSResolver(redis: RedisClient) extends Actor {
   def receive = {
-    case url: URL =>
-      redis.get[String](url.getHost).onSuccess {
+    case (originalSender: ActorRef, url: URL) =>
+      val retrieveFromRedis = redis.get[String](url.getHost) flatMap {
         case Some(address) =>
-          originalSender ! address
+          Future { address }
         case None =>
-          val addr: InetAddress = Address.getByName(url.getHost)
-          redis.set(url.getHost, addr.getHostAddress) onSuccess { case _ =>
-            originalSender ! addr.getHostAddress
-          }
+          val address: InetAddress = Address.getByName(url.getHost)
+          redis.set(url.getHost, address.getHostAddress) flatMap {
+            case success if success => Future { address.getHostAddress }
+            case _ => Future { "Error!" }
+          } map { _ => address.getHostAddress }
       }
+
+      retrieveFromRedis onComplete {
+        case Success(address: String) => originalSender ! address
+        case Failure(e) => originalSender ! Status.Failure(e)
+      }
+
+    case _ => println("Received unexpected type")
   }
 }

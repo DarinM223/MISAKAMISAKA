@@ -21,7 +21,7 @@ class DNSResolverSpec
     with Matchers {
 
   val redis = RedisClient(db = Some(1))
-  val dnsResolverRef = system.actorOf(Props(new DNSResolver(self, redis)), "DNSResolverActor")
+  val dnsResolverRef = system.actorOf(Props(new DNSResolver(redis)), "TestDNSResolverActor")
 
   override def afterAll(): Unit = {
     redis.flushdb()
@@ -31,7 +31,7 @@ class DNSResolverSpec
     "respond with the resolved ip address when sent a url and store the value in redis" in {
       val url = new URL("http://www.google.com")
 
-      dnsResolverRef ! url
+      dnsResolverRef ! (self, url)
       expectMsgPF() {
         case _: String =>
           redis.get[String]("www.google.com").futureValue should not equal None
@@ -40,10 +40,10 @@ class DNSResolverSpec
 
     "return the cached value the second time" in {
       val url = new URL("http://www.facebook.com")
-      dnsResolverRef ! url
+      dnsResolverRef ! (self, url)
       expectMsgPF() {
         case address: String =>
-          dnsResolverRef ! url
+          dnsResolverRef ! (self, url)
           expectMsgPF() {
             case address2: String =>
               address should equal(address2)

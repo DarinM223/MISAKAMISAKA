@@ -22,7 +22,7 @@ class RateLimiterSpec
     with Matchers {
 
   val redis = RedisClient(db = Some(2))
-  val rateLimiterRef = system.actorOf(Props(new RateLimiter(redis)), "RateLimiterActor")
+  val rateLimiterRef = system.actorOf(Props(new RateLimiter(redis)), "TestRateLimiterActor")
 
   override def afterAll(): Unit = {
     redis.flushdb()
@@ -45,15 +45,15 @@ class RateLimiterSpec
       expectMsg(Message.ConfigSaved)
 
       rateLimiterRef ! (self, new URL("http://www.twitter.com"))
-      expectMsg(Some(Message.CanCall))
+      expectMsg(Message.CanCall)
       rateLimiterRef ! (self, new URL("http://www.twitter.com"))
-      expectMsg(Some(Message.CanCall))
+      expectMsg(Message.CanCall)
       rateLimiterRef ! (self, new URL("http://www.twitter.com"))
-      expectMsg(Some(Message.CanCall))
+      expectMsg(Message.CanCall)
       rateLimiterRef ! (self, new URL("http://www.twitter.com"))
-      expectMsg(Some(Message.CanCall))
+      expectMsg(Message.CanCall)
       rateLimiterRef ! (self, new URL("http://www.twitter.com"))
-      expectMsg(Some(Message.CanCall))
+      expectMsg(Message.CanCall)
     }
 
     "should hit the rate limit by calling linkedin 6 times when rate limit is 5" in {
@@ -61,17 +61,17 @@ class RateLimiterSpec
       expectMsg(Message.ConfigSaved)
 
       rateLimiterRef ! (self, new URL("http://www.linkedin.com"))
-      expectMsg(Some(Message.CanCall))
+      expectMsg(Message.CanCall)
       rateLimiterRef ! (self, new URL("http://www.linkedin.com"))
-      expectMsg(Some(Message.CanCall))
+      expectMsg(Message.CanCall)
       rateLimiterRef ! (self, new URL("http://www.linkedin.com"))
-    expectMsg(Some(Message.CanCall))
+      expectMsg(Message.CanCall)
       rateLimiterRef ! (self, new URL("http://www.linkedin.com"))
-      expectMsg(Some(Message.CanCall))
+      expectMsg(Message.CanCall)
       rateLimiterRef ! (self, new URL("http://www.linkedin.com"))
-      expectMsg(Some(Message.CanCall))
+      expectMsg(Message.CanCall)
       rateLimiterRef ! (self, new URL("http://www.linkedin.com"))
-      expectMsg(Some(Message.CannotCall))
+      expectMsg(Message.CannotCall)
     }
   }
 }

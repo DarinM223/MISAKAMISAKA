@@ -8,8 +8,7 @@ import redis.RedisClient
 /**
  * Supervisor actor that manages a RateLimiter Actor
  */
-class RateLimiterSupervisor extends Actor {
-  val redis = RedisClient()
+class RateLimiterSupervisor(val redis: RedisClient) extends Actor {
   val rateLimiterActor = context.actorOf(Props(new RateLimiter(redis)), "RateLimiterActor")
 
   def receive = {

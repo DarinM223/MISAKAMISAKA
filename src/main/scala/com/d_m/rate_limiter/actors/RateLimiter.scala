@@ -2,11 +2,12 @@ package com.d_m.rate_limiter.actors
 
 import java.net.URL
 
-import akka.actor.{Actor, ActorRef}
+import akka.actor.{Status, Actor, ActorRef}
 import com.d_m.rate_limiter.{Message, RedisUtils}
 import redis.RedisClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.{Failure, Success}
 
 /**
  * Actor that handles rate limits on domains
@@ -18,23 +19,18 @@ class RateLimiter(redis: RedisClient) extends Actor {
     case (originalSender: ActorRef, url: URL, maxNumCalls: Int) =>
       val result = RedisUtils.saveMaxNumberOfCalls(redis, url, maxNumCalls)
 
-      result onSuccess { case message =>
-        originalSender ! message
-      }
-
-      result onFailure { case _ =>
-        originalSender ! Message.ConfigFailed
+      result onComplete {
+        case Success(message) => originalSender ! message
+        case Failure(e) => originalSender ! Status.Failure(e)
       }
     // Check rate limit for the domain of a url
     case (originalSender: ActorRef, url: URL) =>
       val result = RedisUtils.checkRateLimit(redis, url)
 
-      result onSuccess { case message =>
-        originalSender ! message
-      }
-
-      result onFailure { case e =>
-        originalSender ! None
+      result onComplete {
+        case Success(Some(message)) => originalSender ! message
+        case Failure(e) => originalSender ! Status.Failure(e)
+        case _ => println("TODO: have to change Options to Trys in Redis code")
       }
   }
 }

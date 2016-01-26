@@ -11,11 +11,13 @@ object Main extends App {
   val config = ConfigFactory.load()
 
   // port is the first command-line argument
-  val port = args(0).toInt
+  if (args.length <= 0) {
+    println("ERROR: You need to specify a port")
+  } else {
+    val port = args(0).toInt
 
-  // Start actor at port
-  val configStr =
-    """
+    // Start actor at port
+    val configStr = """
     akka {
       actor {
         provider = "akka.remote.RemoteActorRefProvider"
@@ -27,23 +29,23 @@ object Main extends App {
           port = """.stripMargin + port + """
         }
       }
-    }
-    """.stripMargin
+    }""".stripMargin
 
-  val system = ActorSystem("Worker", ConfigFactory.parseString(configStr))
+    val system = ActorSystem("Worker", ConfigFactory.parseString(configStr))
 
-  val dnsResolverConfig = config.getConfig("DNSResolver")
-  val dnsHostname = dnsResolverConfig.getString("akka.remote.netty.tcp.hostname")
-  val dnsPort = dnsResolverConfig.getInt("akka.remote.netty.tcp.port")
+    val dnsResolverConfig = config.getConfig("DNSResolver")
+    val dnsHostname = dnsResolverConfig.getString("akka.remote.netty.tcp.hostname")
+    val dnsPort = dnsResolverConfig.getInt("akka.remote.netty.tcp.port")
 
-  // Connect to dns cache remote actor
-  val dnsResolverActor = system.actorSelection("akka.tcp://DNSResolver@" + dnsHostname + ":" +
-    dnsPort + "/user/DNSResolverSupervisorActor")
+    // Connect to dns cache remote actor
+    val dnsResolverActor = system.actorSelection("akka.tcp://DNSResolver@" + dnsHostname + ":" +
+      dnsPort + "/user/DNSResolverSupervisorActor")
 
-  val rateLimiterConfig = config.getConfig("RateLimiter")
-  val rateLimiterHostname = rateLimiterConfig.getString("akka.remote.netty.tcp.hostname")
-  val rateLimiterPort = rateLimiterConfig.getInt("akka.remote.netty.tcp.port")
+    val rateLimiterConfig = config.getConfig("RateLimiter")
+    val rateLimiterHostname = rateLimiterConfig.getString("akka.remote.netty.tcp.hostname")
+    val rateLimiterPort = rateLimiterConfig.getInt("akka.remote.netty.tcp.port")
 
-  val rateLimiterActor = system.actorSelection("akka.tcp://RateLimiter@" + rateLimiterHostname + ":" +
-    rateLimiterPort + "/user/RateLimiterSupervisorActor")
+    val rateLimiterActor = system.actorSelection("akka.tcp://RateLimiter@" + rateLimiterHostname + ":" +
+      rateLimiterPort + "/user/RateLimiterSupervisorActor")
+  }
 }

@@ -26,7 +26,7 @@ class RateLimiterSupervisorSpec
     with Matchers {
 
   val redis = RedisClient(db = Some(3))
-  val rateLimiterSupervisorRef = system.actorOf(Props[RateLimiterSupervisor], "RateLimiterSupervisor")
+  val rateLimiterSupervisorRef = system.actorOf(Props(new RateLimiterSupervisor(redis)), "TestRateLimiterSupervisor")
 
   override def afterAll(): Unit = {
     redis.flushdb()
@@ -38,7 +38,7 @@ class RateLimiterSupervisorSpec
       Await.result(resultSave, 1 second) should equal(Message.ConfigSaved)
 
       val resultCheck = rateLimiterSupervisorRef ? new URL("http://www.google.com")
-      Await.result(resultCheck, 1 second) should equal(Some(Message.CanCall))
+      Await.result(resultCheck, 1 second) should equal(Message.CanCall)
     }
   }
 }

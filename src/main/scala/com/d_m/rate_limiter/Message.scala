@@ -14,8 +14,4 @@ object Message {
   // Messages for checking of you can call a rate-limited function again
   case object CanCall extends Message
   case object CannotCall extends Message
-
-  // Error messages
-  case class RedisError(error: Throwable) extends Message
-  case object NoConfigError extends Message
 }
