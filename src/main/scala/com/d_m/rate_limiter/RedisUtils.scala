@@ -128,9 +128,9 @@ object RedisUtils {
     val transaction = redis.multi()
 
     this.getMaxNumberOfCalls(transaction, url)
-    this.removeExpiredKeys(transaction, host, currentTime, MAX_TIME_DIFFERENCE)
-    this.addUniqueKey(transaction, host, currentTime)
-    transaction.zcount(host, Limit(Double.NegativeInfinity), Limit(Double.PositiveInfinity))
+    this.removeExpiredKeys(transaction, "ratelimit:" + host, currentTime, MAX_TIME_DIFFERENCE)
+    this.addUniqueKey(transaction, "ratelimit:" + host, currentTime)
+    transaction.zcount("ratelimit:" + host, Limit(Double.NegativeInfinity), Limit(Double.PositiveInfinity))
 
     val result = transaction.exec()
 

@@ -29,11 +29,10 @@ class WorkerUtilsSpec
     with Matchers {
 
   // TODO(DarinM223): Supervisors conflict with each other on a single Redis instance. Are keys conflicting?
-  val redis1 = RedisClient(db = Some(5))
-  val redis2 = RedisClient(db = Some(10))
+  val redis = RedisClient(db = Some(5))
 
-  val dnsResolverSupervisor = system.actorOf(Props(new DNSResolverSupervisor(redis1)), "TestDNSResolverSupervisorInWorkerUtils")
-  val rateLimiterSupervisor = system.actorOf(Props(new RateLimiterSupervisor(redis2)), "TestRateLimiterSupervisorInWorkerUtils")
+  val dnsResolverSupervisor = system.actorOf(Props(new DNSResolverSupervisor(redis)), "TestDNSResolverSupervisorInWorkerUtils")
+  val rateLimiterSupervisor = system.actorOf(Props(new RateLimiterSupervisor(redis)), "TestRateLimiterSupervisorInWorkerUtils")
 
   "getAddressAndRateLimit" should {
     "Get the address and rate limit for www.google.com" in {

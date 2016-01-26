@@ -18,12 +18,12 @@ case class ResolverNotFound(err: String) extends Exception(err)
 class DNSResolver(redis: RedisClient) extends Actor {
   def receive = {
     case (originalSender: ActorRef, url: URL) =>
-      val retrieveFromRedis = redis.get[String](url.getHost) flatMap {
+      val retrieveFromRedis = redis.get[String]("dnsresolve:" + url.getHost) flatMap {
         case Some(address) =>
           Future { address }
         case None =>
           val address: InetAddress = Address.getByName(url.getHost)
-          redis.set(url.getHost, address.getHostAddress) flatMap {
+          redis.set("dnsresolve:" + url.getHost, address.getHostAddress) flatMap {
             case success if success => Future { address.getHostAddress }
             case _ => Future { "Error!" }
           } map { _ => address.getHostAddress }

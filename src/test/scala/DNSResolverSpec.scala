@@ -34,7 +34,7 @@ class DNSResolverSpec
       dnsResolverRef ! (self, url)
       expectMsgPF() {
         case _: String =>
-          redis.get[String]("www.google.com").futureValue should not equal None
+          redis.get[String]("dnsresolve:www.google.com").futureValue should not equal None
       }
     }
 
