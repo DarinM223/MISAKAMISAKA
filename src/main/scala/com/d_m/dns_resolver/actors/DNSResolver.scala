@@ -3,14 +3,13 @@ package com.d_m.dns_resolver.actors
 import java.net.{InetAddress, URL}
 
 import akka.actor.{ActorRef, Status, Actor}
+import com.d_m.RedisException
 import org.xbill.DNS._
 import redis.RedisClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
-
-case class ResolverNotFound(err: String) extends Exception(err)
 
 /**
  * Actor that resolves the IP addresses of URLs
@@ -31,7 +30,7 @@ class DNSResolver(redis: RedisClient) extends Actor {
 
       retrieveFromRedis onComplete {
         case Success(address: String) => originalSender ! address
-        case Failure(e) => originalSender ! Status.Failure(e)
+        case Failure(e) => throw RedisException(e.getMessage)
       }
 
     case _ => println("Received unexpected type")
