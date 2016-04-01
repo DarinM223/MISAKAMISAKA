@@ -21,7 +21,7 @@ class RateLimiterSupervisor(val redis: RedisClient) extends Actor {
       case _ => Stop
     }
 
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case (url: URL, maxNumOfCalls: Int) => rateLimiterActor ! (sender(), url, maxNumOfCalls)
     case url: URL => rateLimiterActor ! (sender(), url)
   }

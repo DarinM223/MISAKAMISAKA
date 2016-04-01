@@ -15,7 +15,7 @@ import scala.util.{Failure, Success}
  * Actor that resolves the IP addresses of URLs
  */
 class DNSResolver(redis: RedisClient) extends Actor {
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case (originalSender: ActorRef, url: URL) =>
       val retrieveFromRedis = redis.get[String]("dnsresolve:" + url.getHost) flatMap {
         case Some(address) =>
@@ -32,7 +32,6 @@ class DNSResolver(redis: RedisClient) extends Actor {
         case Success(address: String) => originalSender ! address
         case Failure(e) => throw RedisException(e.getMessage)
       }
-
     case _ => println("Received unexpected type")
   }
 }

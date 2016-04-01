@@ -5,7 +5,7 @@ package com.d_m.rate_limiter
  * with other actors
  */
 object Message {
-  trait Message
+  sealed trait Message
 
   // Messages for saving configs
   case object ConfigSaved extends Message

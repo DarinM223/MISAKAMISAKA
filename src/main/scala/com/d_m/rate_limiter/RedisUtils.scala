@@ -32,7 +32,7 @@ object RedisUtils {
   def addUniqueKey(redis: RedisCommands, key: String, time: Long): Future[Boolean] = {
     val random = new SecureRandom()
     val randomString = new BigInteger(130, random).toString
-    
+
     redis.zadd(key, time.toDouble -> randomString) flatMap {
       case value: Long if value == 1 => Future { true }
       case _ => Future { false }

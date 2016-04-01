@@ -22,7 +22,7 @@ class DNSResolverSupervisor(val redis: RedisClient) extends Actor {
       case _ => Stop
     }
 
-  def receive = {
+  def receive: PartialFunction[Any, Unit] = {
     case url: URL =>
       val dnsResolver = context.actorOf(Props(new DNSResolver(redis)), "DNSResolverActor" + actorCount)
       actorCount += 1

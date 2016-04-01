@@ -72,7 +72,7 @@ object WorkerUtils {
    * Parses the http body and returns a list of links contained in the http body
    * @param response
    */
-  def parseHttpBody(sender: ActorRef, response: HttpResponse) = response.entity match {
+  def parseHttpBody(sender: ActorRef, response: HttpResponse): List[String] = response.entity match {
     case body: NonEmpty => retrieveLinksFromBody(body.asString)
     case Empty => List()
   }

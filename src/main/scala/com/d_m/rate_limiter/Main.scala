@@ -17,3 +17,4 @@ object Main extends App {
   val supervisorActor = system.actorOf(Props(new RateLimiterSupervisor(redis)), "RateLimiterSupervisorActor")
   println("Rate Limiter started at port: " + config.getConfig("RateLimiter").getInt("akka.remote.netty.tcp.port"))
 }
+
