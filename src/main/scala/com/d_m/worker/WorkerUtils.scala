@@ -19,26 +19,27 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.JavaConverters._
 
 /**
- * A utility object for Worker with functions for
- * calling the other actors, sending requests,
- * and parsing the http body
- */
+  * A utility object for Worker with functions for
+  * calling the other actors, sending requests,
+  * and parsing the http body
+  */
 object WorkerUtils {
   // Implicit values for Akka IO
   implicit val timeout = Timeout(FiniteDuration(1, TimeUnit.MINUTES))
   implicit val system = ActorSystem()
 
   /**
-   * Queries both the DNS Resolver and the Rate Limiter concurrently
-   * @param url the url to resolve and check rate limit for
-   * @return a future containing a tuple of the resolved address and the result of the rate limiter query
-   */
-  def getAddressAndRateLimit(
-      url: URL,
-      dnsResolverSupervisor: ActorRef,
-      rateLimiterSupervisor: ActorRef): Future[(String, com.d_m.rate_limiter.Message.Message)] = {
+    * Queries both the DNS Resolver and the Rate Limiter concurrently
+    * @param url the url to resolve and check rate limit for
+    * @return a future containing a tuple of the resolved address and the result of the rate limiter query
+    */
+  def getAddressAndRateLimit(url: URL,
+                             dnsResolverSupervisor: ActorRef,
+                             rateLimiterSupervisor: ActorRef)
+    : Future[(String, com.d_m.rate_limiter.Message.Message)] = {
 
-    val getAddressFuture: Future[String] = (dnsResolverSupervisor ? url).mapTo[String]
+    val getAddressFuture: Future[String] =
+      (dnsResolverSupervisor ? url).mapTo[String]
     val getRateLimiterResult: Future[com.d_m.rate_limiter.Message.Message] =
       (rateLimiterSupervisor ? url).mapTo[com.d_m.rate_limiter.Message.Message]
 
@@ -50,18 +51,18 @@ object WorkerUtils {
   }
 
   /**
-   * Sends a GET http request to an address
-   * @param address the address to request
-   * @return a future containing the response
-   */
+    * Sends a GET http request to an address
+    * @param address the address to request
+    * @return a future containing the response
+    */
   def sendRequest(address: String): Future[HttpResponse] =
     (IO(Http) ? Get(address)).mapTo[HttpResponse]
 
   /**
-   * Given a http response body, returns a list of links in the body
-   * @param body the http response body
-   * @return list of links in the body
-   */
+    * Given a http response body, returns a list of links in the body
+    * @param body the http response body
+    * @return list of links in the body
+    */
   def retrieveLinksFromBody(body: String): List[String] = {
     val doc = Jsoup.parse(body)
     val links = doc.select("a")
@@ -69,11 +70,12 @@ object WorkerUtils {
   }
 
   /**
-   * Parses the http body and returns a list of links contained in the http body
-   * @param response
-   */
-  def parseHttpBody(sender: ActorRef, response: HttpResponse): List[String] = response.entity match {
-    case body: NonEmpty => retrieveLinksFromBody(body.asString)
-    case Empty => List()
-  }
+    * Parses the http body and returns a list of links contained in the http body
+    * @param response
+    */
+  def parseHttpBody(sender: ActorRef, response: HttpResponse): List[String] =
+    response.entity match {
+      case body: NonEmpty => retrieveLinksFromBody(body.asString)
+      case Empty => List()
+    }
 }

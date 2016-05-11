@@ -8,8 +8,8 @@ import com.d_m.RedisException
 import redis.RedisClient
 
 /**
- * Supervisor actor that manages one DNSResolver actor
- */
+  * Supervisor actor that manages one DNSResolver actor
+  */
 class DNSResolverSupervisor(val redis: RedisClient) extends Actor {
   import scala.concurrent.duration._
 
@@ -24,7 +24,8 @@ class DNSResolverSupervisor(val redis: RedisClient) extends Actor {
 
   def receive: PartialFunction[Any, Unit] = {
     case url: URL =>
-      val dnsResolver = context.actorOf(Props(new DNSResolver(redis)), "DNSResolverActor" + actorCount)
+      val dnsResolver = context.actorOf(
+          Props(new DNSResolver(redis)), "DNSResolverActor" + actorCount)
       actorCount += 1
       dnsResolver ! (sender(), url)
   }

@@ -17,16 +17,16 @@ import scala.concurrent.duration._
   * Created by darin on 10/26/15.
   */
 class DNSResolverSupervisorSpec
-  extends TestKit(ActorSystem("DNSResolverSupervisorSpec", ConfigFactory.parseString(DNSResolverSupervisorSpec.config)))
-  with DefaultTimeout
-  with ImplicitSender
-  with WordSpecLike
-  with ScalaFutures
-  with BeforeAndAfterAll
-  with Matchers {
+    extends TestKit(
+        ActorSystem(
+            "DNSResolverSupervisorSpec",
+            ConfigFactory.parseString(DNSResolverSupervisorSpec.config)))
+    with DefaultTimeout with ImplicitSender with WordSpecLike with ScalaFutures
+    with BeforeAndAfterAll with Matchers {
 
   val redis = RedisClient(db = Some(4))
-  val dnsResolverSupervisorRef = system.actorOf(Props(new DNSResolverSupervisor(redis)), "TestDNSResolverSupervisor")
+  val dnsResolverSupervisorRef = system.actorOf(
+      Props(new DNSResolverSupervisor(redis)), "TestDNSResolverSupervisor")
 
   override def afterAll(): Unit = {
     redis.flushdb()
@@ -34,19 +34,20 @@ class DNSResolverSupervisorSpec
 
   "A DNS Resolver supervisor" should {
     "allow ask query syntax" in {
-      val dnsQuery = dnsResolverSupervisorRef ? (new URL("http://www.google.com"))
+      val dnsQuery =
+        dnsResolverSupervisorRef ? new URL("http://www.google.com")
 
       val ipAddress = Await.result(dnsQuery, 1 second)
 
-      val pattern = Pattern.compile("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$")
+      val pattern = Pattern.compile(
+          "^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$")
       pattern.matcher(ipAddress.toString).matches() should equal(true)
     }
   }
 }
 
 object DNSResolverSupervisorSpec {
-  val config =
-    """
+  val config = """
       akka {
         loglevel = "WARNING"
       }

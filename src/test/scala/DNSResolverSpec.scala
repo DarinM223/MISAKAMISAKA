@@ -9,19 +9,18 @@ import org.scalatest.concurrent.ScalaFutures
 import redis.RedisClient
 
 /**
- * Created by darin on 10/21/15.
- */
+  * Created by darin on 10/21/15.
+  */
 class DNSResolverSpec
-    extends TestKit(ActorSystem("DNSResolverSpec", ConfigFactory.parseString(DNSResolverSpec.config)))
-    with DefaultTimeout
-    with ImplicitSender
-    with WordSpecLike
-    with ScalaFutures
-    with BeforeAndAfterAll
-    with Matchers {
+    extends TestKit(
+        ActorSystem("DNSResolverSpec",
+                    ConfigFactory.parseString(DNSResolverSpec.config)))
+    with DefaultTimeout with ImplicitSender with WordSpecLike with ScalaFutures
+    with BeforeAndAfterAll with Matchers {
 
   val redis = RedisClient(db = Some(1))
-  val dnsResolverRef = system.actorOf(Props(new DNSResolver(redis)), "TestDNSResolverActor")
+  val dnsResolverRef =
+    system.actorOf(Props(new DNSResolver(redis)), "TestDNSResolverActor")
 
   override def afterAll(): Unit = {
     redis.flushdb()
@@ -54,8 +53,7 @@ class DNSResolverSpec
 }
 
 object DNSResolverSpec {
-  val config =
-    """
+  val config = """
       akka {
         loglevel = "WARNING"
       }

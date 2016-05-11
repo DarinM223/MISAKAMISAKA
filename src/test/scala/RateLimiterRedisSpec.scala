@@ -10,13 +10,10 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 /**
- * Created by darin on 10/23/15.
- */
+  * Created by darin on 10/23/15.
+  */
 class RateLimiterRedisSpec
-    extends WordSpec
-    with ScalaFutures
-    with BeforeAndAfterAll
-    with Matchers {
+    extends WordSpec with ScalaFutures with BeforeAndAfterAll with Matchers {
 
   implicit val akkaSystem = akka.actor.ActorSystem()
   val redis = RedisClient(db = Some(0))
@@ -27,7 +24,8 @@ class RateLimiterRedisSpec
 
   "saveMaxNumberOfCalls" should {
     "set the max number of calls in redis" in {
-      val result = RedisUtils.saveMaxNumberOfCalls(redis, new URL("http://www.google.com/calendar"), 5)
+      val result = RedisUtils.saveMaxNumberOfCalls(
+          redis, new URL("http://www.google.com/calendar"), 5)
       val value = Await.result(result, 1 second)
 
       value should equal(Message.ConfigSaved)
@@ -40,25 +38,30 @@ class RateLimiterRedisSpec
 
   "getMaxNumberOfCalls" should {
     "get the max number of calls after setting" in {
-      val result = RedisUtils.saveMaxNumberOfCalls(redis, new URL("http://www.google.com/maps"), 5) flatMap { _ =>
-        RedisUtils.getMaxNumberOfCalls(redis, new URL("http://www.google.com/maps"))
-      }
+      val url = new URL("http://www.google.com/maps")
+      val result =
+        RedisUtils.saveMaxNumberOfCalls(redis, url, 5) flatMap { _ =>
+          RedisUtils.getMaxNumberOfCalls(redis, url)
+        }
 
       Await.result(result, 1 second) should equal(Some(5))
     }
 
     "return None if value not set" in {
-      val result = RedisUtils.getMaxNumberOfCalls(redis, new URL("http://www.facebook.com"))
+      val result = RedisUtils.getMaxNumberOfCalls(
+          redis, new URL("http://www.facebook.com"))
       Await.result(result, 1 second) should equal(None)
     }
   }
 
   "checkRateLimit" should {
     "call once successfully" in {
-      val result = RedisUtils.saveMaxNumberOfCalls(redis, new URL("http://www.reddit.com"), 5) flatMap { _ =>
-        val rateLimitRequest = RedisUtils.checkRateLimit(redis, new URL("http://www.reddit.com"))
-        rateLimitRequest
-      }
+      val url = new URL("https://www.reddit.com")
+      val result =
+        RedisUtils.saveMaxNumberOfCalls(redis, url, 5) flatMap { _ =>
+          val rateLimitRequest = RedisUtils.checkRateLimit(redis, url)
+          rateLimitRequest
+        }
 
       val value = Await.result(result, 1 second)
       value.count(_ => true) should equal(1)
@@ -66,10 +69,13 @@ class RateLimiterRedisSpec
     }
 
     "call twitter 5 times in a second" in {
-      val result = RedisUtils.saveMaxNumberOfCalls(redis, new URL("http://www.twitter.com"), 5) flatMap { success =>
-        val rateLimitRequests = (1 to 5).map(_ => RedisUtils.checkRateLimit(redis, new URL("http://www.twitter.com")))
-        Future.sequence(rateLimitRequests)
-      }
+      val url = new URL("https://twitter.com")
+      val result =
+        RedisUtils.saveMaxNumberOfCalls(redis, url, 5) flatMap { success =>
+          val rateLimitRequests =
+            (1 to 5).map(_ => RedisUtils.checkRateLimit(redis, url))
+          Future.sequence(rateLimitRequests)
+        }
 
       val value = Await.result(result, 1 second)
       value.count(_ => true) should equal(5)
@@ -77,10 +83,13 @@ class RateLimiterRedisSpec
     }
 
     "call linkedin 6 times in a second with a rate limit of 5 and cause an error" in {
-      val result = RedisUtils.saveMaxNumberOfCalls(redis, new URL("http://www.linkedin.com"), 5) flatMap { success =>
-        val rateLimitRequests = (1 to 6).map(_ => RedisUtils.checkRateLimit(redis, new URL("http://www.linkedin.com")))
-        Future.sequence(rateLimitRequests)
-      }
+      val url = new URL("http://www.linkedin.com")
+      val result =
+        RedisUtils.saveMaxNumberOfCalls(redis, url, 5) flatMap { success =>
+          val rateLimitRequests =
+            (1 to 6).map(_ => RedisUtils.checkRateLimit(redis, url))
+          Future.sequence(rateLimitRequests)
+        }
 
       val value = Await.result(result, 1 second)
       value.count(_ => true) should equal(6)
@@ -89,10 +98,13 @@ class RateLimiterRedisSpec
     }
 
     "call ycombinator 5 times, wait a second and call it again and it should work" in {
-      val result = RedisUtils.saveMaxNumberOfCalls(redis, new URL("http://www.ycombinator.com"), 5) flatMap { success =>
-        val rateLimitRequests = (1 to 5).map(_ => RedisUtils.checkRateLimit(redis, new URL("http://www.ycombinator.com")))
-        Future.sequence(rateLimitRequests)
-      }
+      val url = new URL("http://www.ycombinator.com")
+      val result =
+        RedisUtils.saveMaxNumberOfCalls(redis, url, 5) flatMap { success =>
+          val rateLimitRequests =
+            (1 to 5).map(_ => RedisUtils.checkRateLimit(redis, url))
+          Future.sequence(rateLimitRequests)
+        }
 
       val value = Await.result(result, 1 second)
       value.count(_ => true) should equal(5)
@@ -101,7 +113,7 @@ class RateLimiterRedisSpec
       // Wait for one second
       Thread.sleep(1000)
 
-      val finalRequest = RedisUtils.checkRateLimit(redis, new URL("http://www.ycombinator.com"))
+      val finalRequest = RedisUtils.checkRateLimit(redis, url)
       val finalValue = Await.result(finalRequest, 1 second)
 
       finalValue should equal(Some(Message.CanCall))

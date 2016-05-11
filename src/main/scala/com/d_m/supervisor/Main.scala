@@ -6,8 +6,8 @@ import com.d_m.supervisor.actors.{Producer, Supervisor}
 import com.d_m.worker.actors.Worker
 
 /**
- * Main application for the supervisor program
- */
+  * Main application for the supervisor program
+  */
 object Main extends App {
   import com.typesafe.config.ConfigFactory
 
@@ -21,5 +21,6 @@ object Main extends App {
   val worker = system.actorOf(Props[Worker], "WorkerActor")
   val producer = system.actorOf(Props[Producer], "ProducerActor")
 
-  println("Supervisor started at port: " + config.getConfig("Supervisor").getInt("akka.remote.netty.tcp.port"))
+  println("Supervisor started at port: " +
+      config.getConfig("Supervisor").getInt("akka.remote.netty.tcp.port"))
 }

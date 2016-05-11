@@ -18,28 +18,34 @@ import scala.concurrent.duration._
 import akka.pattern.ask
 
 /**
- * Created by darin on 11/3/15.
- */
+  * Created by darin on 11/3/15.
+  */
 class WorkerUtilsSpec
-    extends TestKit(ActorSystem("WorkerUtilsSpec", ConfigFactory.parseString(WorkerUtilsSpec.config)))
-    with DefaultTimeout
-    with ImplicitSender
-    with WordSpecLike
-    with ScalaFutures
-    with BeforeAndAfterAll
-    with Matchers {
+    extends TestKit(
+        ActorSystem("WorkerUtilsSpec",
+                    ConfigFactory.parseString(WorkerUtilsSpec.config)))
+    with DefaultTimeout with ImplicitSender with WordSpecLike with ScalaFutures
+    with BeforeAndAfterAll with Matchers {
 
   val redis = RedisClient(db = Some(5))
 
-  val dnsResolverSupervisor = system.actorOf(Props(new DNSResolverSupervisor(redis)), "TestDNSResolverSupervisorInWorkerUtils")
-  val rateLimiterSupervisor = system.actorOf(Props(new RateLimiterSupervisor(redis)), "TestRateLimiterSupervisorInWorkerUtils")
+  val dnsResolverSupervisor = system.actorOf(
+      Props(new DNSResolverSupervisor(redis)),
+      "TestDNSResolverSupervisorInWorkerUtils")
+  val rateLimiterSupervisor = system.actorOf(
+      Props(new RateLimiterSupervisor(redis)),
+      "TestRateLimiterSupervisorInWorkerUtils")
 
   "getAddressAndRateLimit" should {
     "Get the address and rate limit for www.google.com" in {
-      val result = (rateLimiterSupervisor ? (new URL("http://www.google.com"), 5)) flatMap {
-        case _ =>
-          WorkerUtils.getAddressAndRateLimit(new URL("http://www.google.com"), dnsResolverSupervisor, rateLimiterSupervisor)
-      }
+      val result =
+        (rateLimiterSupervisor ? (new URL("http://www.google.com"), 5)) flatMap {
+          case _ =>
+            WorkerUtils.getAddressAndRateLimit(
+                new URL("http://www.google.com"),
+                dnsResolverSupervisor,
+                rateLimiterSupervisor)
+        }
 
       val value = Await.result(result, 2 seconds)
       value._2 should equal(Message.CanCall)
@@ -48,7 +54,8 @@ class WorkerUtilsSpec
 
   "sendRequest" should {
     "Properly send GET request" in {
-      val result = WorkerUtils.sendRequest("http://www.google.com").mapTo[HttpResponse]
+      val result =
+        WorkerUtils.sendRequest("http://www.google.com").mapTo[HttpResponse]
       val response = Await.result(result, 2 seconds)
       response.status.intValue should equal(200)
     }
@@ -56,12 +63,9 @@ class WorkerUtilsSpec
 
   "retrieveLinksFromBody" should {
     "Properly retrieve links from html" in {
-      val body = "<html>" +
-        "<body>" +
-        "<a href=\"www.google.com\">Google</a>" +
-        "<a href=\"www.facebook.com\">Facebook</a>" +
-        "</body>" +
-        "</html>"
+      val body =
+        "<html>" + "<body>" + "<a href=\"www.google.com\">Google</a>" +
+        "<a href=\"www.facebook.com\">Facebook</a>" + "</body>" + "</html>"
 
       val result = WorkerUtils.retrieveLinksFromBody(body)
       result should equal(List("www.google.com", "www.facebook.com"))
@@ -70,8 +74,7 @@ class WorkerUtilsSpec
 }
 
 object WorkerUtilsSpec {
-  val config =
-    """
+  val config = """
       akka {
         loglevel = "WARNING"
       }

@@ -10,19 +10,18 @@ import org.scalatest.concurrent.ScalaFutures
 import redis.RedisClient
 
 /**
- * Test class for RateLimiter
- */
+  * Test class for RateLimiter
+  */
 class RateLimiterSpec
-    extends TestKit(ActorSystem("RateLimiterSpec", ConfigFactory.parseString(RateLimiterSpec.config)))
-    with DefaultTimeout
-    with ImplicitSender
-    with WordSpecLike
-    with ScalaFutures
-    with BeforeAndAfterAll
-    with Matchers {
+    extends TestKit(
+        ActorSystem("RateLimiterSpec",
+                    ConfigFactory.parseString(RateLimiterSpec.config)))
+    with DefaultTimeout with ImplicitSender with WordSpecLike with ScalaFutures
+    with BeforeAndAfterAll with Matchers {
 
   val redis = RedisClient(db = Some(2))
-  val rateLimiterRef = system.actorOf(Props(new RateLimiter(redis)), "TestRateLimiterActor")
+  val rateLimiterRef =
+    system.actorOf(Props(new RateLimiter(redis)), "TestRateLimiterActor")
 
   override def afterAll(): Unit = {
     redis.flushdb()
@@ -34,7 +33,8 @@ class RateLimiterSpec
 
       expectMsgPF() {
         case Message.ConfigSaved =>
-          redis.get[String]("config:www.google.com").futureValue should equal(Some("5"))
+          redis.get[String]("config:www.google.com").futureValue should equal(
+              Some("5"))
         case Message.ConfigFailed =>
           false should equal(true)
       }
@@ -77,8 +77,7 @@ class RateLimiterSpec
 }
 
 object RateLimiterSpec {
-  val config =
-    """
+  val config = """
       akka {
         loglevel = "WARNING"
       }

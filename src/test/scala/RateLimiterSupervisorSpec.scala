@@ -14,19 +14,19 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 /**
- * Created by darin on 10/26/15.
- */
+  * Created by darin on 10/26/15.
+  */
 class RateLimiterSupervisorSpec
-    extends TestKit(ActorSystem("RateLimiterSupervisorSpec", ConfigFactory.parseString(RateLimiterSupervisorSpec.config)))
-    with DefaultTimeout
-    with ImplicitSender
-    with WordSpecLike
-    with ScalaFutures
-    with BeforeAndAfterAll
-    with Matchers {
+    extends TestKit(
+        ActorSystem(
+            "RateLimiterSupervisorSpec",
+            ConfigFactory.parseString(RateLimiterSupervisorSpec.config)))
+    with DefaultTimeout with ImplicitSender with WordSpecLike with ScalaFutures
+    with BeforeAndAfterAll with Matchers {
 
   val redis = RedisClient(db = Some(3))
-  val rateLimiterSupervisorRef = system.actorOf(Props(new RateLimiterSupervisor(redis)), "TestRateLimiterSupervisor")
+  val rateLimiterSupervisorRef = system.actorOf(
+      Props(new RateLimiterSupervisor(redis)), "TestRateLimiterSupervisor")
 
   override def afterAll(): Unit = {
     redis.flushdb()
@@ -34,18 +34,19 @@ class RateLimiterSupervisorSpec
 
   "A rate limiter supervisor" should {
     "allow ask query syntax" in {
-      val resultSave = rateLimiterSupervisorRef ? (new URL("http://www.google.com"), 5)
+      val resultSave =
+        rateLimiterSupervisorRef ? (new URL("http://www.google.com"), 5)
       Await.result(resultSave, 1 second) should equal(Message.ConfigSaved)
 
-      val resultCheck = rateLimiterSupervisorRef ? new URL("http://www.google.com")
+      val resultCheck =
+        rateLimiterSupervisorRef ? new URL("http://www.google.com")
       Await.result(resultCheck, 1 second) should equal(Message.CanCall)
     }
   }
 }
 
 object RateLimiterSupervisorSpec {
-  val config =
-    """
+  val config = """
       akka {
         loglevel = "WARNING"
       }

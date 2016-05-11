@@ -1,9 +1,9 @@
 package com.d_m.rate_limiter
 
 /**
- * Contains all of the messages used by the rate limiter to communicate
- * with other actors
- */
+  * Contains all of the messages used by the rate limiter to communicate
+  * with other actors
+  */
 object Message {
   sealed trait Message
 
